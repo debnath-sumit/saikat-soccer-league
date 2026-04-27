@@ -16,13 +16,91 @@ import {
 } from "recharts";
 
 const GOOGLE_SHEET_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbx7hha-5CPyblTgrR9dyBDRZJZiEGOCn2WB8wm9IZgRv2_bDv1JwGLYD_zYldLxMUaj/exec";
+  "https://script.google.com/macros/s/AKfycbxL78oIit8irEZ7-KAmj37wnDPjJUm1mxaXmwYdEJra-ZpV3ZubUYPSjqfddd0dqdIi/exec";
 
 const TEAMS = [
-  { name: "Harbhanga United", short: "HU", emoji: "⚽", color: "#2563eb" },
-  { name: "Chomkaitola Sporting Club", short: "CSC", emoji: "🔥", color: "#dc2626" },
-  { name: "Old Monks™", short: "OM", emoji: "🥃", color: "#92400e" },
-  { name: "FC Kumro Potash", short: "FCKP", emoji: "🎃", color: "#ea580c" },
+  {
+    name: "Harbhanga United",
+    short: "HU",
+    emoji: "⚽",
+    color: "#2563eb",
+    players: [
+      "Binayak L.",
+      "Rishan Ray",
+      "Shyama (C)",
+      "Tirtha",
+      "Abhishek Saha",
+      "Amit Sinha",
+      "Rohan Sen",
+      "Aryaan DebRoy",
+      "Jayanta",
+      "Sushil",
+      "Ashish Garg",
+      "Indranil Acharya",
+      "Srijan",
+    ],
+  },
+  {
+    name: "Chomkaitola Sporting Club",
+    short: "CSC",
+    emoji: "🔥",
+    color: "#dc2626",
+    players: [
+      "Sumit",
+      "Suman (C)",
+      "Aranya Debnath",
+      "Debasmit",
+      "Shubhrangshu",
+      "Sourav",
+      "Shrish Maiti",
+      "Abesh Chatterjee",
+      "Barun Das",
+      "Arindom",
+      "Sandipan",
+      "Raika Ghosh",
+    ],
+  },
+  {
+    name: "Old Monks™",
+    short: "OM",
+    emoji: "🥃",
+    color: "#92400e",
+    players: [
+      "Naveen",
+      "Suvam",
+      "Bani (C)",
+      "Debaditya Ray",
+      "Soumyadip",
+      "Arijeet",
+      "Revanta",
+      "Agniv Das",
+      "Om Chatterjee",
+      "Rishi Maulick",
+      "Jay Shah",
+      "Nilanjan",
+      "Arunim",
+    ],
+  },
+  {
+    name: "FC Kumro Potash",
+    short: "FCKP",
+    emoji: "🎃",
+    color: "#ea580c",
+    players: [
+      "Ankur Debnath",
+      "Subho Chatterjee (C)",
+      "Obie",
+      "Krishnarjun",
+      "Joon Chatterjee",
+      "Rakesh",
+      "Arya Mazumdar",
+      "Reyaan Das",
+      "Souradipta",
+      "Somenath",
+      "Richik Mukhopadhyay",
+      "Animesh",
+    ],
+  },
 ];
 
 type TeamStats = {
@@ -68,13 +146,21 @@ function buildPayload({ name, supportTeam, winningTeam }: VotePayloadInput) {
 }
 
 async function saveToGoogleSheet(payload: VotePayloadInput) {
-  await fetch(GOOGLE_SHEET_WEB_APP_URL, {
+  const response = await fetch(GOOGLE_SHEET_WEB_APP_URL, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain;charset=utf-8",
     },
     body: JSON.stringify(payload),
   });
+
+  const result = await response.json();
+
+  if (!result.ok) {
+    throw new Error(result.error || "Vote save failed.");
+  }
+
+  return result;
 }
 
 async function loadVotesFromGoogleSheet() {
@@ -139,17 +225,29 @@ type VoteButtonProps = {
 
 function VoteButton({ team, selected, onClick }: VoteButtonProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded-xl border p-4 text-left text-base font-bold transition hover:shadow-md ${
-        selected
-          ? "border-slate-900 bg-slate-900 text-white"
-          : "border-gray-300 bg-white text-gray-950 hover:bg-gray-50"
-      }`}
-    >
-      {team.emoji} {team.name}
-    </button>
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={onClick}
+        className={`w-full rounded-xl border p-4 text-left text-base font-bold transition hover:shadow-md ${
+          selected
+            ? "border-slate-900 bg-slate-900 text-white"
+            : "border-gray-300 bg-white text-gray-950 hover:bg-gray-50"
+        }`}
+      >
+        {team.emoji} {team.name}
+      </button>
+
+      <div className="absolute left-0 top-full z-[9999] mt-2 hidden w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-2xl group-hover:block">
+        <div className="mb-2 font-black">{team.name} Players</div>
+
+        <div className="grid grid-cols-1 gap-1">
+          {team.players.map((player) => (
+            <div key={player}>• {player}</div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -227,7 +325,7 @@ export default function Page() {
       })
       .catch((error) => {
         console.error(error);
-        setMessage("Vote save failed. Please try again.");
+        setMessage(error.message || "Vote save failed. May be the Name is already taken. Please try again with a different name.");
       });
   };
 
@@ -268,7 +366,7 @@ export default function Page() {
 
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="rounded-3xl shadow-xl">
-            <CardContent className="p-6">
+            <CardContent className="overflow-visible p-6"> 
               <h2 className="mb-4 text-2xl font-black text-gray-950">❤️ Which team do you support?</h2>
               <div className="space-y-3">
                 {TEAMS.map((team) => (
@@ -284,7 +382,7 @@ export default function Page() {
           </Card>
 
           <Card className="rounded-3xl shadow-xl">
-            <CardContent className="p-6">
+            <CardContent className="overflow-visible p-6">
               <h2 className="mb-4 text-2xl font-black text-gray-950">🏆 Your Prediction: Who will win?</h2>
               <div className="space-y-3">
                 {TEAMS.map((team) => (
