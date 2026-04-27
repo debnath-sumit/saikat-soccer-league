@@ -24,19 +24,24 @@ const TEAMS = [
   { name: "FC Kumro Potash", short: "FCKP", emoji: "🎃", color: "#ea580c" },
 ];
 
-function createEmptyStats() {
-  return TEAMS.reduce((acc, team) => {
+type TeamStats = {
+  predictionVotes: number;
+  supportVotes: number;
+};
+
+function createEmptyStats(): Record<string, TeamStats> {
+  return TEAMS.reduce<Record<string, TeamStats>>((acc, team) => {
     acc[team.name] = { predictionVotes: 0, supportVotes: 0 };
     return acc;
   }, {});
 }
 
-function isValidEmail(email) {
+function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-function getTotals(stats) {
-  return Object.values(stats).reduce(
+function getTotals(stats: Record<string, TeamStats>) {
+  return Object.values(stats).reduce<TeamStats>(
     (totals, item) => ({
       predictionVotes: totals.predictionVotes + item.predictionVotes,
       supportVotes: totals.supportVotes + item.supportVotes,
@@ -45,7 +50,16 @@ function getTotals(stats) {
   );
 }
 
-function addVote(stats, teamName, voteType) {
+type VoteType = "prediction" | "support";
+
+type VotePayloadInput = {
+  name: string;
+  email: string;
+  team: string;
+  voteType: VoteType;
+};
+
+function addVote(stats: Record<string, TeamStats>, teamName: string, voteType: VoteType) {
   const key = voteType === "prediction" ? "predictionVotes" : "supportVotes";
   return {
     ...stats,
@@ -56,11 +70,11 @@ function addVote(stats, teamName, voteType) {
   };
 }
 
-function getLeader(stats, voteKey) {
+function getLeader(stats: Record<string, TeamStats>, voteKey: keyof TeamStats) {
   return [...TEAMS].sort((a, b) => stats[b.name][voteKey] - stats[a.name][voteKey])[0];
 }
 
-function buildPayload({ name, email, team, voteType }) {
+function buildPayload({ name, email, team, voteType }: VotePayloadInput) {
   return {
     tournament: "Saikat Soccer League",
     name,
@@ -71,7 +85,7 @@ function buildPayload({ name, email, team, voteType }) {
   };
 }
 
-async function saveToGoogleSheet(payload) {
+async function saveToGoogleSheet(payload: VotePayloadInput) {
   if (!GOOGLE_SHEET_WEB_APP_URL || GOOGLE_SHEET_WEB_APP_URL.includes("PASTE_YOUR")) {
     console.warn("Google Sheet Web App URL is not configured yet.", payload);
     return;
@@ -99,15 +113,27 @@ function runSmokeTests() {
 
 runSmokeTests();
 
-function Card({ children, className = "" }) {
+type CardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+function Card({ children, className = "" }: CardProps) {
   return <div className={`bg-white text-gray-950 ${className}`}>{children}</div>;
 }
 
-function CardContent({ children, className = "" }) {
+function CardContent({ children, className = "" }: CardProps) {
   return <div className={className}>{children}</div>;
 }
 
-function NativeButton({ children, onClick, disabled, variant = "primary" }) {
+type NativeButtonProps = {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  variant?: "primary" | "secondary";
+};
+
+function NativeButton({ children, onClick, disabled, variant = "primary" }: NativeButtonProps) {
   const base =
     "rounded-xl px-6 py-3 font-bold transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50";
   const styles =
@@ -122,7 +148,13 @@ function NativeButton({ children, onClick, disabled, variant = "primary" }) {
   );
 }
 
-function VoteButton({ team, selected, onClick }) {
+type VoteButtonProps = {
+  team: (typeof TEAMS)[number];
+  selected: boolean;
+  onClick: () => void;
+};
+
+function VoteButton({ team, selected, onClick }: VoteButtonProps) {
   return (
     <button
       type="button"
@@ -140,7 +172,7 @@ function VoteButton({ team, selected, onClick }) {
 
 export default function Page() {
   const [stats, setStats] = useState(createEmptyStats());
-  const [votes, setVotes] = useState([]);
+  const [votes, setVotes] = useState<VotePayloadInput[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [supportPick, setSupportPick] = useState("");
@@ -178,7 +210,7 @@ export default function Page() {
     return true;
   };
 
-  const submitVote = (voteType) => {
+  const submitVote = (voteType: VoteType) => {
     if (!validateUser()) return;
 
     const selectedTeam = voteType === "support" ? supportPick : predictionPick;
@@ -224,13 +256,26 @@ export default function Page() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-orange-50 p-6 text-gray-950">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 rounded-3xl bg-slate-900 p-8 text-white shadow-xl">
-          <h1 className="text-4xl font-black">Saikat Soccer League</h1>
-          <p className="mt-2 text-lg text-slate-200">Fan Support & Prediction Portal</p>
+          <div className="flex items-center gap-4">
+            <img
+              src="/saikat-logo.png"
+              alt="Saikat Association logo"
+              width={72}
+              height={72}
+              className="rounded-full border-2 border-white/30 bg-white object-contain"
+              loading="eager"
+              fetchPriority="high"
+            />
+            <div>
+              <h1 className="text-4xl font-black">Saikat Soccer League(SSL)</h1>
+              <p className="mt-2 text-lg text-slate-200">Fan Support & Prediction Portal</p>
+            </div>
+          </div>
         </div>
 
         <Card className="mb-6 rounded-3xl shadow-xl">
           <CardContent className="p-6">
-            <h2 className="mb-4 text-2xl font-black text-gray-950">Fan Details</h2>
+            <h2 className="mb-4 text-2xl font-semibold tracking-tight text-gray-900">Fan Details</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-bold text-gray-950">Your name *</label>
