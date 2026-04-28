@@ -434,7 +434,20 @@ export default function Page() {
   const [predictionPick, setPredictionPick] = useState("");
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [votesPage, setVotesPage] = useState(1);
+  const [hasVoted, setHasVoted] = useState<{ at: string } | null>(null);
   const VOTES_PER_PAGE = 10;
+  const VOTED_STORAGE_KEY = "saikat-soccer-league:voted";
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(VOTED_STORAGE_KEY);
+    if (stored) {
+      try {
+        setHasVoted(JSON.parse(stored));
+      } catch {
+        window.localStorage.removeItem(VOTED_STORAGE_KEY);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     loadVotesFromGoogleSheet()
@@ -468,6 +481,11 @@ export default function Page() {
   const supportLeader = getLeader(stats, "supportVotes");
 
   const submitVote = async () => {
+    if (hasVoted) {
+      setMessage({ text: "You've already voted from this device.", isError: true });
+      return;
+    }
+
     const nameError = validateName(name);
     if (nameError) {
       setMessage({ text: nameError, isError: true });
@@ -503,6 +521,9 @@ export default function Page() {
         setStats(data.stats);
         setSupportPick("");
         setPredictionPick("");
+        const record = { at: new Date().toISOString() };
+        window.localStorage.setItem(VOTED_STORAGE_KEY, JSON.stringify(record));
+        setHasVoted(record);
         setMessage({ text: "Vote counted successfully.", isError: false });
       })
       .catch((error) => {
@@ -588,8 +609,17 @@ export default function Page() {
           </Card>
         </div>
 
+        {hasVoted && (
+          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center font-bold text-slate-700 shadow">
+            You&apos;ve already voted from this device. Thanks for participating!
+          </div>
+        )}
+
         <div className="mt-6 flex justify-center">
-          <NativeButton onClick={submitVote} disabled={!supportPick || !predictionPick}>
+          <NativeButton
+            onClick={submitVote}
+            disabled={!supportPick || !predictionPick || !!hasVoted}
+          >
             Submit Vote
           </NativeButton>
         </div>
