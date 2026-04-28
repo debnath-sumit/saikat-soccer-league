@@ -363,12 +363,16 @@ function VoteButton({ team, selected, onClick }: VoteButtonProps) {
         {team.emoji} {team.name}
       </button>
 
-      <div className="mt-2 rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-md sm:hidden">
-        {heading}
-        <div className="grid grid-cols-2 gap-1">{playerItems}</div>
-      </div>
+      <details className="mt-2 rounded-xl border border-gray-300 bg-white text-sm text-gray-950 shadow-md sm:hidden">
+        <summary className="cursor-pointer list-none px-4 py-2 font-bold text-slate-700 [&::-webkit-details-marker]:hidden">
+          View {team.name} players
+        </summary>
+        <div className="px-4 pb-4">
+          <div className="grid grid-cols-2 gap-1">{playerItems}</div>
+        </div>
+      </details>
 
-      <div className="absolute left-0 top-full z-[9999] mt-2 hidden w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-2xl group-hover:block max-sm:!hidden">
+      <div className="absolute left-0 top-full z-[9999] mt-2 hidden w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-2xl group-hover:block max-sm:hidden!">
         {heading}
         <div className="grid grid-cols-1 gap-1">{playerItems}</div>
       </div>
