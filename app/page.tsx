@@ -347,6 +347,9 @@ type VoteButtonProps = {
 };
 
 function VoteButton({ team, selected, onClick }: VoteButtonProps) {
+  const heading = <div className="mb-2 font-black">{team.name} Players</div>;
+  const playerItems = team.players.map((player) => <div key={player}>• {player}</div>);
+
   return (
     <div className="group relative">
       <button
@@ -361,14 +364,14 @@ function VoteButton({ team, selected, onClick }: VoteButtonProps) {
         {team.emoji} {team.name}
       </button>
 
-      <div className="absolute left-0 top-full z-[9999] mt-2 hidden w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-2xl group-hover:block">
-        <div className="mb-2 font-black">{team.name} Players</div>
+      <div className="mt-2 rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-md sm:hidden">
+        {heading}
+        <div className="grid grid-cols-2 gap-1">{playerItems}</div>
+      </div>
 
-        <div className="grid grid-cols-1 gap-1">
-          {team.players.map((player) => (
-            <div key={player}>• {player}</div>
-          ))}
-        </div>
+      <div className="absolute left-0 top-full z-[9999] mt-2 hidden w-full rounded-xl border border-gray-300 bg-white p-4 text-sm text-gray-950 shadow-2xl group-hover:block max-sm:!hidden">
+        {heading}
+        <div className="grid grid-cols-1 gap-1">{playerItems}</div>
       </div>
     </div>
   );
