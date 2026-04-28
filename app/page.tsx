@@ -418,7 +418,7 @@ export default function Page() {
   const [name, setName] = useState("");
   const [supportPick, setSupportPick] = useState("");
   const [predictionPick, setPredictionPick] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [votesPage, setVotesPage] = useState(1);
   const VOTES_PER_PAGE = 10;
 
@@ -430,7 +430,7 @@ export default function Page() {
       })
       .catch((error) => {
         console.error(error);
-        setMessage("Unable to load current votes.");
+        setMessage({ text: "Unable to load current votes.", isError: true });
       });
   }, []);
 
@@ -456,17 +456,17 @@ export default function Page() {
   const submitVote = () => {
     const nameError = validateName(name);
     if (nameError) {
-      setMessage(nameError);
+      setMessage({ text: nameError, isError: true });
       return;
     }
 
     if (!supportPick) {
-      setMessage("Please select the team you support.");
+      setMessage({ text: "Please select the team you support.", isError: true });
       return;
     }
 
     if (!predictionPick) {
-      setMessage("Please select the team you think will win.");
+      setMessage({ text: "Please select the team you think will win.", isError: true });
       return;
     }
 
@@ -476,7 +476,7 @@ export default function Page() {
       winningTeam: predictionPick,
     });
 
-    setMessage("Saving vote...");
+    setMessage({ text: "Saving vote...", isError: false });
 
     saveToGoogleSheet(payload)
       .then(() => loadVotesFromGoogleSheet())
@@ -485,11 +485,14 @@ export default function Page() {
         setStats(data.stats);
         setSupportPick("");
         setPredictionPick("");
-        setMessage("Vote counted successfully.");
+        setMessage({ text: "Vote counted successfully.", isError: false });
       })
       .catch((error) => {
         console.error(error);
-        setMessage(error.message || "Vote save failed. May be the Name is already taken. Please try again with a different name.");
+        setMessage({
+          text: error.message || "Vote save failed. May be the Name is already taken. Please try again with a different name.",
+          isError: true,
+        });
       });
   };
 
@@ -574,8 +577,14 @@ export default function Page() {
         </div>
 
         {message && (
-          <div className="mt-4 rounded-2xl bg-white p-4 text-center font-bold text-gray-950 shadow">
-            {message}
+          <div
+            className={`mt-4 rounded-2xl p-4 text-center font-bold shadow ${
+              message.isError
+                ? "border border-red-200 bg-red-50 text-red-700"
+                : "bg-white text-gray-950"
+            }`}
+          >
+            {message.text}
           </div>
         )}
 
