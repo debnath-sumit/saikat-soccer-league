@@ -16,7 +16,7 @@ import {
 } from "recharts";
 
 const GOOGLE_SHEET_WEB_APP_URL =
-  "https://script.google.com/macros/s/AKfycbxL78oIit8irEZ7-KAmj37wnDPjJUm1mxaXmwYdEJra-ZpV3ZubUYPSjqfddd0dqdIi/exec";
+  "https://script.google.com/macros/s/AKfycbz3PbRwLG1-bTkc_m5hW73fORKAbJ8h59rJe15pr-6gangNQ7HhtOJIR-4_ymZ72lmV/exec";
 
 const MATCH_DAY = new Date("2026-05-09T00:00:00");
 
@@ -60,12 +60,11 @@ function BreakingNews() {
   const [items, setItems] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch("/news.txt", { cache: "no-store" })
-      .then((response) => (response.ok ? response.text() : ""))
-      .then((text) => {
-        const lines = text
-          .split(/\r?\n/)
-          .map((line) => line.trim())
+    fetch(`${GOOGLE_SHEET_WEB_APP_URL}?resource=news`, { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data: { news?: unknown[] }) => {
+        const lines = (data.news ?? [])
+          .map((item) => String(item).trim())
           .filter(Boolean);
         setItems(lines);
       })
