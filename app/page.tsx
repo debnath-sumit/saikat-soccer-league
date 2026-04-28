@@ -257,6 +257,35 @@ function getLeader(stats: Record<string, TeamStats>, voteKey: keyof TeamStats) {
   return [...TEAMS].sort((a, b) => stats[b.name][voteKey] - stats[a.name][voteKey])[0];
 }
 
+// Add slang/celebrity/politician names you've seen abused. Compared as whole tokens, lowercase.
+const BLOCKED_NAME_TERMS = [
+  "messi",
+  "ronaldo",
+  "neymar",
+  "modi",
+  "trump",
+  "mamata",
+];
+
+function validateName(rawName: string): string | null {
+  const name = rawName.trim();
+  if (name.length < 2) return "Please enter your full name.";
+  if (name.length > 30) return "Name must be 30 characters or fewer.";
+  if (!/^[A-Za-z][A-Za-z\s.'-]*$/.test(name)) {
+    return "Name can only contain letters, spaces, hyphens, periods, and apostrophes.";
+  }
+  if (/\s{2,}/.test(name)) return "Please remove extra spaces from your name.";
+  const spaceCount = (name.match(/ /g) ?? []).length;
+  if (spaceCount < 1) return "Please enter both first and last name.";
+  if (spaceCount > 2) return "Name can have at most two spaces.";
+  if (/(.)\1{2,}/.test(name)) return "Please enter a real name.";
+  const tokens = name.toLowerCase().split(/\s+/).map((t) => t.replace(/[.'-]/g, ""));
+  if (tokens.some((token) => BLOCKED_NAME_TERMS.includes(token))) {
+    return "Please use your actual name.";
+  }
+  return null;
+}
+
 function buildPayload({ name, supportTeam, winningTeam }: VotePayloadInput) {
   return {
     tournament: "Saikat Soccer League",
@@ -425,8 +454,9 @@ export default function Page() {
   const supportLeader = getLeader(stats, "supportVotes");
 
   const submitVote = () => {
-    if (!name.trim()) {
-      setMessage("Please enter your name first.");
+    const nameError = validateName(name);
+    if (nameError) {
+      setMessage(nameError);
       return;
     }
 
@@ -495,6 +525,7 @@ export default function Page() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Enter your name"
+              maxLength={30}
               className="w-full rounded-xl border border-gray-400 bg-white px-4 py-3 text-gray-950 placeholder:text-gray-500 outline-none focus:border-slate-900"
             />
             <p className="mt-3 text-sm font-medium text-gray-700">Name is mandatory for voting.</p>
