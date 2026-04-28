@@ -18,6 +18,129 @@ import {
 const GOOGLE_SHEET_WEB_APP_URL =
   "https://script.google.com/macros/s/AKfycbxL78oIit8irEZ7-KAmj37wnDPjJUm1mxaXmwYdEJra-ZpV3ZubUYPSjqfddd0dqdIi/exec";
 
+const MATCH_DAY = new Date("2026-05-09T00:00:00");
+
+type CountdownParts = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isLive: boolean;
+};
+
+function getCountdownParts(target: Date): CountdownParts {
+  const diff = target.getTime() - Date.now();
+
+  if (diff <= 0) {
+    return { days: 0, hours: 0, minutes: 0, seconds: 0, isLive: true };
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+  const minutes = Math.floor((diff / (1000 * 60)) % 60);
+  const seconds = Math.floor((diff / 1000) % 60);
+
+  return { days, hours, minutes, seconds, isLive: false };
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center rounded-xl bg-white/10 px-2 py-2 backdrop-blur sm:min-w-[68px] sm:px-3">
+      <span className="text-2xl font-black tabular-nums tracking-tight sm:text-3xl">
+        {value.toString().padStart(2, "0")}
+      </span>
+      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-200">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function BreakingNews() {
+  const [items, setItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/news.txt", { cache: "no-store" })
+      .then((response) => (response.ok ? response.text() : ""))
+      .then((text) => {
+        const lines = text
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean);
+        setItems(lines);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-6 overflow-hidden rounded-3xl border-2 border-slate-900 bg-white shadow-xl">
+      <div className="flex items-center gap-2 bg-slate-900 px-4 py-2 text-white">
+        <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-white" />
+        <span className="text-sm font-black uppercase tracking-widest">
+          Transfer Window Drama – SSL Edition ⚽🔥
+        </span>
+      </div>
+      <ul className="list-disc space-y-2 p-5 pl-9 text-gray-950">
+        {items.map((item, index) => (
+          <li key={index} className="font-bold">
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function MatchCountdown() {
+  const [parts, setParts] = useState<CountdownParts | null>(null);
+
+  useEffect(() => {
+    setParts(getCountdownParts(MATCH_DAY));
+    const id = setInterval(() => {
+      setParts(getCountdownParts(MATCH_DAY));
+    }, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!parts) {
+    return null;
+  }
+
+  if (parts.isLive) {
+    return (
+      <div className="mt-6 rounded-2xl bg-green-500/20 p-4 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-green-200">
+          Match Day
+        </p>
+        <p className="mt-1 text-2xl font-black">It&apos;s game time! ⚽</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl bg-white/10 p-4 backdrop-blur">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-200">
+            Kickoff Countdown
+          </p>
+          <p className="text-sm font-semibold text-slate-100">May 09, 2026</p>
+        </div>
+        <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto">
+          <CountdownUnit value={parts.days} label="Days" />
+          <CountdownUnit value={parts.hours} label="Hours" />
+          <CountdownUnit value={parts.minutes} label="Mins" />
+          <CountdownUnit value={parts.seconds} label="Secs" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const TEAMS = [
   {
     name: "Harbhanga United",
@@ -348,7 +471,10 @@ export default function Page() {
               <p className="mt-2 text-lg text-slate-200">Fan Support & Prediction Portal</p>
             </div>
           </div>
+          <MatchCountdown />
         </div>
+
+        <BreakingNews />
 
         <Card className="mb-6 rounded-3xl shadow-xl">
           <CardContent className="p-6">
