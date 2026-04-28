@@ -286,14 +286,28 @@ function validateName(rawName: string): string | null {
   return null;
 }
 
-function buildPayload({ name, supportTeam, winningTeam }: VotePayloadInput) {
+function buildPayload({ name, supportTeam, winningTeam }: VotePayloadInput, ip: string) {
   return {
     tournament: "Saikat Soccer League",
     name,
     supportTeam,
     winningTeam,
+    ip,
     submittedAt: new Date().toISOString(),
   };
+}
+
+async function fetchClientIp(): Promise<string> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch("https://api.ipify.org?format=json", { signal: controller.signal });
+    clearTimeout(timeout);
+    const data: { ip?: string } = await response.json();
+    return data.ip ?? "";
+  } catch {
+    return "";
+  }
 }
 
 async function saveToGoogleSheet(payload: VotePayloadInput) {
@@ -453,7 +467,7 @@ export default function Page() {
   const predictionLeader = getLeader(stats, "predictionVotes");
   const supportLeader = getLeader(stats, "supportVotes");
 
-  const submitVote = () => {
+  const submitVote = async () => {
     const nameError = validateName(name);
     if (nameError) {
       setMessage({ text: nameError, isError: true });
@@ -470,13 +484,17 @@ export default function Page() {
       return;
     }
 
-    const payload = buildPayload({
-      name: name.trim(),
-      supportTeam: supportPick,
-      winningTeam: predictionPick,
-    });
-
     setMessage({ text: "Saving vote...", isError: false });
+
+    const ip = await fetchClientIp();
+    const payload = buildPayload(
+      {
+        name: name.trim(),
+        supportTeam: supportPick,
+        winningTeam: predictionPick,
+      },
+      ip,
+    );
 
     saveToGoogleSheet(payload)
       .then(() => loadVotesFromGoogleSheet())
