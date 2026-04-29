@@ -270,14 +270,12 @@ const BLOCKED_NAME_TERMS = [
 function validateName(rawName: string): string | null {
   const name = rawName.trim();
   if (name.length < 2) return "Please enter your full name.";
-  if (name.length > 30) return "Name must be 30 characters or fewer.";
+  if (name.length > 60) return "Name must be 60 characters or fewer.";
   if (!/^[A-Za-z][A-Za-z\s.'-]*$/.test(name)) {
     return "Name can only contain letters, spaces, hyphens, periods, and apostrophes.";
   }
   if (/\s{2,}/.test(name)) return "Please remove extra spaces from your name.";
-  const spaceCount = (name.match(/ /g) ?? []).length;
-  if (spaceCount < 1) return "Please enter both first and last name.";
-  if (spaceCount > 2) return "Name can have at most two spaces.";
+  if (!/\s/.test(name)) return "Please enter both first and last name.";
   if (/(.)\1{2,}/.test(name)) return "Please enter a real name.";
   const tokens = name.toLowerCase().split(/\s+/).map((t) => t.replace(/[.'-]/g, ""));
   if (tokens.some((token) => BLOCKED_NAME_TERMS.includes(token))) {
@@ -434,20 +432,7 @@ export default function Page() {
   const [predictionPick, setPredictionPick] = useState("");
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [votesPage, setVotesPage] = useState(1);
-  const [hasVoted, setHasVoted] = useState<{ at: string } | null>(null);
   const VOTES_PER_PAGE = 10;
-  const VOTED_STORAGE_KEY = "saikat-soccer-league:voted";
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(VOTED_STORAGE_KEY);
-    if (stored) {
-      try {
-        setHasVoted(JSON.parse(stored));
-      } catch {
-        window.localStorage.removeItem(VOTED_STORAGE_KEY);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     loadVotesFromGoogleSheet()
@@ -481,11 +466,6 @@ export default function Page() {
   const supportLeader = getLeader(stats, "supportVotes");
 
   const submitVote = async () => {
-    if (hasVoted) {
-      setMessage({ text: "You've already voted from this device.", isError: true });
-      return;
-    }
-
     const nameError = validateName(name);
     if (nameError) {
       setMessage({ text: nameError, isError: true });
@@ -521,9 +501,6 @@ export default function Page() {
         setStats(data.stats);
         setSupportPick("");
         setPredictionPick("");
-        const record = { at: new Date().toISOString() };
-        window.localStorage.setItem(VOTED_STORAGE_KEY, JSON.stringify(record));
-        setHasVoted(record);
         setMessage({ text: "Vote counted successfully.", isError: false });
       })
       .catch((error) => {
@@ -539,20 +516,9 @@ export default function Page() {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-orange-50 p-6 text-gray-950">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8 rounded-3xl bg-slate-900 p-8 text-white shadow-xl">
-          <div className="flex items-center gap-4">
-            <img
-              src="/saikat-logo.png"
-              alt="Saikat Association logo"
-              width={72}
-              height={72}
-              className="rounded-full border-2 border-white/30 bg-white object-contain"
-              loading="eager"
-              fetchPriority="high"
-            />
-            <div>
-              <h1 className="text-4xl font-black">Saikat Soccer League(SSL)</h1>
-              <p className="mt-2 text-lg text-slate-200">Fan Support & Prediction Portal</p>
-            </div>
+          <div>
+            <h1 className="text-4xl font-black">Saikat Soccer League(SSL)</h1>
+            <p className="mt-2 text-lg text-slate-200">Fan Support & Prediction Portal</p>
           </div>
           <MatchCountdown />
         </div>
@@ -567,7 +533,7 @@ export default function Page() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               placeholder="Enter your name"
-              maxLength={30}
+              maxLength={60}
               className="w-full rounded-xl border border-gray-400 bg-white px-4 py-3 text-gray-950 placeholder:text-gray-500 outline-none focus:border-slate-900"
             />
             <p className="mt-3 text-sm font-medium text-gray-700">Name is mandatory for voting.</p>
@@ -609,17 +575,8 @@ export default function Page() {
           </Card>
         </div>
 
-        {hasVoted && (
-          <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center font-bold text-slate-700 shadow">
-            You&apos;ve already voted from this device. Thanks for participating!
-          </div>
-        )}
-
         <div className="mt-6 flex justify-center">
-          <NativeButton
-            onClick={submitVote}
-            disabled={!supportPick || !predictionPick || !!hasVoted}
-          >
+          <NativeButton onClick={submitVote} disabled={!supportPick || !predictionPick}>
             Submit Vote
           </NativeButton>
         </div>
