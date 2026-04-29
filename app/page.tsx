@@ -339,10 +339,7 @@ async function loadVotesFromGoogleSheet() {
     }
   });
 
-  return {
-    votes: data.votes.reverse(),
-    stats: freshStats,
-  };
+  return { stats: freshStats };
 }
 
 type CardProps = {
@@ -423,18 +420,14 @@ function VoteButton({ team, selected, onClick, showMobilePlayers = true }: VoteB
 
 export default function Page() {
   const [stats, setStats] = useState(createEmptyStats());
-  const [votes, setVotes] = useState<VotePayloadInput[]>([]);
   const [name, setName] = useState("");
   const [supportPick, setSupportPick] = useState("");
   const [predictionPick, setPredictionPick] = useState("");
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
-  const [votesPage, setVotesPage] = useState(1);
-  const VOTES_PER_PAGE = 10;
 
   useEffect(() => {
     loadVotesFromGoogleSheet()
       .then((data) => {
-        setVotes(data.votes);
         setStats(data.stats);
       })
       .catch((error) => {
@@ -494,7 +487,6 @@ export default function Page() {
     saveToGoogleSheet(payload)
       .then(() => loadVotesFromGoogleSheet())
       .then((data) => {
-        setVotes(data.votes);
         setStats(data.stats);
         setSupportPick("");
         setPredictionPick("");
@@ -684,67 +676,6 @@ export default function Page() {
           </Card>
         </div>
 
-        {votes.length > 0 && (() => {
-          const totalPages = Math.max(1, Math.ceil(votes.length / VOTES_PER_PAGE));
-          const currentPage = Math.min(votesPage, totalPages);
-          const startIndex = (currentPage - 1) * VOTES_PER_PAGE;
-          const pageVotes = votes.slice(startIndex, startIndex + VOTES_PER_PAGE);
-          return (
-            <Card className="mt-8 rounded-3xl shadow-xl">
-              <CardContent className="p-6">
-                <h2 className="mb-4 text-xl font-black text-gray-950">Recent Votes</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-950">
-                    <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="p-3">Name</th>
-                        <th className="p-3">Team you support</th>
-                        <th className="p-3">Team Win</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pageVotes.map((vote, index) => (
-                        <tr key={`${vote.name}-${startIndex + index}`} className="border-b">
-                          <td className="p-3">{vote.name}</td>
-                          <td className="p-3">{vote.supportTeam}</td>
-                          <td className="p-3">{vote.winningTeam}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {totalPages > 1 && (
-                  <div className="mt-4 flex items-center justify-between text-sm text-gray-700">
-                    <span>
-                      Showing {startIndex + 1}-{Math.min(startIndex + VOTES_PER_PAGE, votes.length)} of {votes.length}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setVotesPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="rounded-full border border-gray-300 px-4 py-1.5 font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Prev
-                      </button>
-                      <span className="font-semibold">
-                        Page {currentPage} of {totalPages}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setVotesPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="rounded-full border border-gray-300 px-4 py-1.5 font-semibold disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
       </div>
     </div>
   );
