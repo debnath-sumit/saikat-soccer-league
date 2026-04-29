@@ -271,9 +271,6 @@ function validateName(rawName: string): string | null {
   const name = rawName.trim();
   if (name.length < 2) return "Please enter your full name.";
   if (name.length > 60) return "Name must be 60 characters or fewer.";
-  if (!/^[A-Za-z][A-Za-z\s.'-]*$/.test(name)) {
-    return "Name can only contain letters, spaces, hyphens, periods, and apostrophes.";
-  }
   if (/\s{2,}/.test(name)) return "Please remove extra spaces from your name.";
   if (!/\s/.test(name)) return "Please enter both first and last name.";
   if (/(.)\1{2,}/.test(name)) return "Please enter a real name.";
